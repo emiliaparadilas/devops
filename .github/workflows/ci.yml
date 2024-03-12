@@ -1,0 +1,31 @@
+name: Deploy to Server
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup SSH Keys
+      run: |
+        echo "$SSH_KEY" > key.pem
+        chmod 400 key.pem
+        ssh-keygen -t rsa -C "$(hostname)" -f "$HOME/.ssh/id_rsa" -P ""
+      env:
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+      
+    - name: Display public key
+      run: cat ~/.ssh/id_rsa.pub
+      
+    - name: Execute SSH Commands
+      run: |
+        ssh -i key.pem -o "StrictHostKeyChecking no" root@110.239.94.146 "apt update && apt install apache2 -y"
+        ssh -i key.pem -o "StrictHostKeyChecking no" root@110.239.94.146 "rm -rf /var/www/html/bintang && rm -rf bintang"
+        ssh -i key.pem -o "StrictHostKeyChecking no" root@110.239.94.146 "git clone https://gitlab.com/muhammadbintangcahyaputra/belajar-gitlabpart2 bintang"
+        ssh -i key.pem -o "StrictHostKeyChecking no" root@110.239.94.146 "mv bintang /var/www/html/ && rm -rf bintang"
+      env:
+        SSH_KEY: ${{ secrets.SSH_KEY }}
